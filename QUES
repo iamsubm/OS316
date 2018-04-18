@@ -1,0 +1,50 @@
+#include<stdio.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<string.h>
+#include<stdlib.h>
+int main( int arg1, char* arg2[] ) 
+{
+    int fdone[2];
+    pid_t childid;
+
+    char readbuffer[100];
+    char writebuffer[100];
+    int readcounter;
+
+    pipe( fdone );
+
+    if( arg1 < 3 ) {
+        printf( " Required atleast 2 parameters\n" );
+        exit(1);
+    }
+    int fileOpen = open( arg2[1], 0 );
+    int targetFile = open( arg2[2], 0666 );
+
+    if ( fileOpen == -1 || targetFile == -1 ) {
+        printf( "Opening file failed\n " );
+        exit(1);
+    }
+    childid = fork();
+
+    if( childid == 0 ) {
+        // inside child prcocess
+        close( fdone[1] );
+
+        read( fdone[0], readbuffer, sizeof( readbuffer ) );
+        printf( "The recived string is : %s\n", readbuffer );
+
+        //Writing to target fileOpen
+        write( targetFile, readbuffer, strlen( readbuffer ) + 1 );
+    } else {
+        // inside parent process
+        close( fdone[0] );
+        // code to read from a text file
+
+        while( (readcounter = read( fileOpen, readbuffer, sizeof( readbuffer ) ) > 0 ) )  {
+        write( fdone[1], readbuffer, sizeof( readbuffer ) );
+        }
+        close( fdone[1] );
+    }
+}
